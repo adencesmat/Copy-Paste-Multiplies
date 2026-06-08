@@ -158,7 +158,11 @@
       <div class="container contact-inner">
         <h2>BREEDING RIGHTS &amp; CALF SALES</h2>
         <p>Tell us whether you're after breeding rights or a calf, and we'll be in touch within two business days.</p>
-        <form class="contact-form" onsubmit="event.preventDefault(); this.reset(); document.getElementById('formMsg').hidden=false;">
+        <form class="contact-form" name="contact" method="POST" data-netlify="true" netlify-honeypot="bot-field">
+          <input type="hidden" name="form-name" value="contact" />
+          <p class="hp-field" aria-hidden="true">
+            <label>Don't fill this out if you're human: <input name="bot-field" tabindex="-1" autocomplete="off" /></label>
+          </p>
           <div class="field-row">
             <input type="text" name="name" placeholder="Full name" required />
             <input type="email" name="email" placeholder="Email address" required />
@@ -196,8 +200,12 @@
       <div class="footer-col footer-news">
         <h5>Join the Plains</h5>
         <p>News on births, available rights, and the herd.</p>
-        <form class="news-form" onsubmit="event.preventDefault(); this.reset();">
-          <input type="email" placeholder="Email address" aria-label="Email address" required />
+        <form class="news-form" name="newsletter" method="POST" data-netlify="true" netlify-honeypot="bot-field">
+          <input type="hidden" name="form-name" value="newsletter" />
+          <p class="hp-field" aria-hidden="true">
+            <label>Don't fill this out: <input name="bot-field" tabindex="-1" autocomplete="off" /></label>
+          </p>
+          <input type="email" name="email" placeholder="Email address" aria-label="Email address" required />
           <button type="submit" aria-label="Subscribe">→</button>
         </form>
       </div>
@@ -207,5 +215,30 @@
       <span>Privacy · Terms</span>
     </div>
   </footer>
+
+  <script>
+    // Submit Netlify Forms via AJAX so the page doesn't navigate away.
+    document.querySelectorAll('form[data-netlify="true"]').forEach(function (form) {
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var data = new URLSearchParams(new FormData(form)).toString();
+        fetch('/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: data
+        }).then(function () {
+          form.reset();
+          var msg = form.querySelector('.form-msg');
+          if (msg) msg.hidden = false;
+          if (form.classList.contains('news-form')) {
+            form.insertAdjacentHTML('afterend', '<p class="form-msg">Subscribed — thank you.</p>');
+          }
+        }).catch(function () {
+          var msg = form.querySelector('.form-msg');
+          if (msg) { msg.hidden = false; msg.textContent = 'Something went wrong — please email us directly.'; }
+        });
+      });
+    });
+  </script>
 </body>
 </html>
