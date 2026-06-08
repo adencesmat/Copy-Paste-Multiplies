@@ -1,0 +1,132 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" role="img" aria-label="A sacred white buffalo standing on the open prairie at dawn">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2b2117"/>
+      <stop offset="42%" stop-color="#6b4a2b"/>
+      <stop offset="70%" stop-color="#b9823f"/>
+      <stop offset="100%" stop-color="#e7b15e"/>
+    </linearGradient>
+    <radialGradient id="sun" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#fff4d6" stop-opacity="0.95"/>
+      <stop offset="45%" stop-color="#f6cd7e" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#f6cd7e" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="ground" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#7c5a2e"/>
+      <stop offset="100%" stop-color="#3a2817"/>
+    </linearGradient>
+    <linearGradient id="bodyShade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="55%" stop-color="#f3eee4"/>
+      <stop offset="100%" stop-color="#d8cdb8"/>
+    </linearGradient>
+    <linearGradient id="maneShade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fbf7ef"/>
+      <stop offset="100%" stop-color="#cdbfa3"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Sky -->
+  <rect width="1200" height="900" fill="url(#sky)"/>
+  <circle cx="600" cy="430" r="360" fill="url(#sun)"/>
+
+  <!-- Distant mountains -->
+  <path d="M0 560 L160 470 L300 540 L470 440 L640 530 L820 450 L1000 540 L1200 480 L1200 620 L0 620 Z"
+        fill="#5a3f27" opacity="0.55"/>
+  <path d="M0 600 L220 530 L430 590 L650 520 L880 595 L1100 540 L1200 580 L1200 700 L0 700 Z"
+        fill="#4a3320" opacity="0.7"/>
+
+  <!-- Prairie ground -->
+  <rect y="610" width="1200" height="290" fill="url(#ground)"/>
+  <path d="M0 610 Q300 590 600 612 T1200 610 L1200 660 L0 660 Z" fill="#8a6533" opacity="0.5"/>
+
+  <!-- Soft shadow under buffalo -->
+  <ellipse cx="610" cy="780" rx="320" ry="42" fill="#1c130a" opacity="0.45"/>
+
+  <!-- ===== WHITE BUFFALO (side profile, facing left) ===== -->
+  <g>
+    <!-- Hind legs -->
+    <path d="M735 690 q14 70 6 96 l-30 0 q-6 -52 -2 -98 Z" fill="#cdbfa3"/>
+    <path d="M810 690 q16 72 8 98 l-30 0 q-8 -54 -2 -100 Z" fill="#d8cdb8"/>
+    <!-- Front legs -->
+    <path d="M392 700 q-10 66 -2 92 l30 0 q6 -50 0 -96 Z" fill="#d8cdb8"/>
+    <path d="M470 706 q-8 64 0 90 l30 0 q4 -48 -2 -94 Z" fill="#e7ddca"/>
+    <!-- Hooves -->
+    <rect x="709" y="780" width="34" height="16" rx="4" fill="#564a36"/>
+    <rect x="786" y="782" width="34" height="16" rx="4" fill="#4d4230"/>
+    <rect x="408" y="784" width="34" height="14" rx="4" fill="#564a36"/>
+    <rect x="486" y="788" width="34" height="14" rx="4" fill="#4d4230"/>
+
+    <!-- Hindquarters + body -->
+    <path d="M470 560
+             C470 470 560 440 660 446
+             C760 452 835 500 845 600
+             C852 668 815 706 740 712
+             C640 720 520 716 470 700
+             C436 688 432 600 470 560 Z"
+          fill="url(#bodyShade)"/>
+
+    <!-- Tail -->
+    <path d="M842 600 q40 26 30 92 q-2 16 -14 12 q8 -52 -22 -86 Z" fill="#cdbfa3"/>
+
+    <!-- Shoulder hump (signature bison silhouette) -->
+    <path d="M300 470
+             C300 360 380 312 470 326
+             C560 340 560 470 540 560
+             C470 600 360 596 320 560
+             C290 532 290 506 300 470 Z"
+          fill="url(#maneShade)"/>
+
+    <!-- Shaggy mane texture over hump/chest -->
+    <g fill="#e9dfca" opacity="0.85">
+      <path d="M330 420 q-14 30 -4 70 q14 -8 18 -36 q4 -22 -14 -34 Z"/>
+      <path d="M362 400 q-12 36 -2 78 q14 -10 16 -40 q4 -26 -14 -38 Z"/>
+      <path d="M398 392 q-10 40 0 84 q14 -12 14 -44 q2 -28 -14 -40 Z"/>
+      <path d="M436 392 q-8 42 2 86 q14 -14 12 -46 q0 -28 -14 -40 Z"/>
+    </g>
+
+    <!-- Neck / chest connecting head -->
+    <path d="M300 470 C250 470 210 500 206 560 C204 612 246 660 320 666 C400 672 470 640 470 560 C420 520 360 500 300 470 Z"
+          fill="url(#bodyShade)"/>
+
+    <!-- Head -->
+    <path d="M150 470
+             C150 416 192 384 244 388
+             C300 392 332 432 330 492
+             C328 552 296 596 236 600
+             C176 604 150 560 150 520
+             C148 504 148 486 150 470 Z"
+          fill="url(#bodyShade)"/>
+
+    <!-- Forehead woolly cap -->
+    <path d="M170 452 C172 408 214 390 252 398 C292 406 308 440 300 470 C262 452 210 448 170 452 Z"
+          fill="url(#maneShade)"/>
+
+    <!-- Beard -->
+    <path d="M196 588 q-6 54 8 86 q14 -6 16 -34 q4 -32 -8 -54 Z" fill="#dcd0b8"/>
+
+    <!-- Snout -->
+    <path d="M150 500 C120 500 104 522 106 548 C108 574 132 586 158 582 C180 578 188 556 184 532 C182 512 170 500 150 500 Z"
+          fill="#efe7d6"/>
+    <ellipse cx="126" cy="546" rx="11" ry="9" fill="#564a40"/>
+
+    <!-- Eye -->
+    <ellipse cx="214" cy="486" rx="11" ry="12" fill="#2c2117"/>
+    <circle cx="210" cy="482" r="3" fill="#fff" opacity="0.85"/>
+
+    <!-- Horns -->
+    <path d="M214 410 C196 380 168 372 150 386 C168 392 188 404 206 426 Z" fill="#2f261a"/>
+    <path d="M214 410 C198 376 168 366 146 380 C160 374 180 380 196 402 Z" fill="#4a3d2a"/>
+    <path d="M268 408 C290 380 320 376 336 392 C316 396 296 408 280 430 Z" fill="#2f261a"/>
+
+    <!-- Ear -->
+    <path d="M286 444 q34 -8 44 14 q-22 12 -44 2 Z" fill="#dcd0b8"/>
+
+    <!-- Subtle body fur strokes -->
+    <g stroke="#cfc3aa" stroke-width="2" opacity="0.5" fill="none" stroke-linecap="round">
+      <path d="M540 560 q40 16 90 14"/>
+      <path d="M560 600 q60 14 130 8"/>
+      <path d="M520 640 q70 12 150 4"/>
+    </g>
+  </g>
+</svg>
