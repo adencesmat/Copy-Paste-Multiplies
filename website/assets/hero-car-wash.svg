@@ -1,0 +1,114 @@
+<svg viewBox="0 0 720 560" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A freshly hand-washed glossy car with water beading on a mirror finish">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0d2a44"/>
+      <stop offset="0.55" stop-color="#0a4f7a"/>
+      <stop offset="1" stop-color="#0b1220"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.38" r="0.7">
+      <stop offset="0" stop-color="#25c3ee" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#25c3ee" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f4fbff"/>
+      <stop offset="0.4" stop-color="#cfe7f4"/>
+      <stop offset="0.6" stop-color="#8fb9d1"/>
+      <stop offset="1" stop-color="#31536b"/>
+    </linearGradient>
+    <linearGradient id="bodyLow" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5c8299"/>
+      <stop offset="1" stop-color="#1c3546"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#dff4ff"/>
+      <stop offset="1" stop-color="#3f6a86"/>
+    </linearGradient>
+    <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#12263a"/>
+      <stop offset="1" stop-color="#0b1220"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.9"/>
+      <stop offset="0.5" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- backdrop -->
+  <rect width="720" height="560" fill="url(#sky)"/>
+  <rect width="720" height="560" fill="url(#glow)"/>
+  <rect y="392" width="720" height="168" fill="url(#floor)"/>
+
+  <!-- reflection on wet floor -->
+  <ellipse cx="360" cy="470" rx="250" ry="42" fill="#25c3ee" opacity="0.10"/>
+
+  <!-- car shadow -->
+  <ellipse cx="360" cy="430" rx="240" ry="30" fill="#000" opacity="0.35"/>
+
+  <!-- CAR -->
+  <g>
+    <!-- lower body -->
+    <path d="M108 330 Q120 300 170 296 L235 292 Q280 250 360 248 Q452 250 502 296 L578 306 Q612 314 618 344 L620 384 Q620 404 596 406 L132 406 Q110 404 108 382 Z" fill="url(#bodyLow)"/>
+    <!-- upper body / roof -->
+    <path d="M108 330 Q140 316 200 314 L520 316 Q580 320 618 344 Q560 306 500 296 L235 292 Q190 300 160 314 Q130 322 108 330 Z" fill="url(#body)"/>
+    <path d="M235 292 Q280 250 360 248 Q452 250 502 296 L470 300 Q430 268 360 267 Q296 268 262 298 Z" fill="url(#body)"/>
+
+    <!-- cabin glass -->
+    <path d="M270 292 Q300 262 360 261 Q424 262 452 292 L430 300 Q400 275 360 275 Q318 275 292 300 Z" fill="url(#glass)" opacity="0.92"/>
+    <line x1="360" y1="262" x2="360" y2="300" stroke="#2c4a5f" stroke-width="3" opacity="0.6"/>
+
+    <!-- door line -->
+    <path d="M360 300 L360 400" stroke="#2c4a5f" stroke-width="2" opacity="0.4"/>
+    <!-- highlight streak (fresh wax shine) -->
+    <path d="M150 330 Q360 300 600 344" stroke="#ffffff" stroke-width="4" opacity="0.55" fill="none"/>
+    <path d="M180 356 L560 366" stroke="#ffffff" stroke-width="2" opacity="0.25" fill="none"/>
+
+    <!-- shine flare on hood -->
+    <path d="M470 300 Q520 306 560 322 L520 336 Q486 316 452 312 Z" fill="url(#shine)" opacity="0.7"/>
+
+    <!-- wheels -->
+    <g>
+      <circle cx="212" cy="406" r="46" fill="#0b1220"/>
+      <circle cx="212" cy="406" r="24" fill="#2b3b49"/>
+      <circle cx="212" cy="406" r="23" fill="none" stroke="#8fb9d1" stroke-width="3"/>
+      <circle cx="212" cy="406" r="7" fill="#cfe7f4"/>
+    </g>
+    <g>
+      <circle cx="508" cy="406" r="46" fill="#0b1220"/>
+      <circle cx="508" cy="406" r="24" fill="#2b3b49"/>
+      <circle cx="508" cy="406" r="23" fill="none" stroke="#8fb9d1" stroke-width="3"/>
+      <circle cx="508" cy="406" r="7" fill="#cfe7f4"/>
+    </g>
+
+    <!-- headlight -->
+    <path d="M600 330 Q616 334 618 348 L600 352 Z" fill="#eafbff"/>
+  </g>
+
+  <!-- water beads / droplets on the paint -->
+  <g fill="#eafbff">
+    <circle cx="300" cy="330" r="4" opacity="0.85"/>
+    <circle cx="330" cy="345" r="3" opacity="0.7"/>
+    <circle cx="392" cy="336" r="5" opacity="0.85"/>
+    <circle cx="420" cy="352" r="3" opacity="0.7"/>
+    <circle cx="250" cy="350" r="3.5" opacity="0.75"/>
+    <circle cx="470" cy="330" r="3" opacity="0.7"/>
+    <circle cx="360" cy="360" r="3" opacity="0.6"/>
+  </g>
+
+  <!-- suds / bubbles floating -->
+  <g fill="#ffffff">
+    <circle cx="150" cy="150" r="16" opacity="0.28"/>
+    <circle cx="176" cy="128" r="9" opacity="0.22"/>
+    <circle cx="592" cy="176" r="20" opacity="0.25"/>
+    <circle cx="626" cy="150" r="10" opacity="0.2"/>
+    <circle cx="96" cy="240" r="11" opacity="0.2"/>
+    <circle cx="640" cy="250" r="13" opacity="0.2"/>
+    <circle cx="120" cy="196" r="7" opacity="0.24"/>
+  </g>
+
+  <!-- sparkle stars (clean shine) -->
+  <g stroke="#ffffff" stroke-width="2" opacity="0.85" stroke-linecap="round">
+    <path d="M492 288 l0 -16 M492 288 l0 16 M492 288 l-14 0 M492 288 l14 0"/>
+    <path d="M262 300 l0 -10 M262 300 l0 10 M262 300 l-9 0 M262 300 l9 0" opacity="0.6"/>
+    <path d="M556 328 l0 -8 M556 328 l0 8 M556 328 l-7 0 M556 328 l7 0" opacity="0.6"/>
+  </g>
+</svg>

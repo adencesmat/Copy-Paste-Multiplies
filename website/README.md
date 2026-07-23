@@ -1,26 +1,52 @@
-# Sacred Plains Ranch — White Buffalo Website
+# Biz Family Autos — Hand Car Wash & Detailing Website
 
-A static marketing site for a ranch that **specializes in white buffalo**. The
-business sells two things:
+A conversion-focused marketing site for **Biz Family Autos**, a family-run
+**100% hand car wash and auto detailing** business serving Garden City,
+Medford, and Long Island, NY since 1979.
 
-1. **Breeding rights** to its proven white bulls and cows.
-2. **Offspring** — the white calves (and bred heifers / genetics) produced by the herd.
+The site is built to **generate revenue**: it leads with clear wash pricing,
+detailing packages, a recurring **Unlimited Wash membership**, upsell add-ons,
+fleet/gift-card offers, strong calls-to-action, and a booking/quote lead form.
+
+## Business details
+- **Phone:** (516) 220-3000
+- **Garden City:** 3 Commercial Avenue, Garden City, NY 11530
+- **Medford:** Medford, NY (Suffolk County)
+- Update prices, hours, and the Medford street address with the owner's exact
+  figures before going fully live — the numbers shown are realistic starting
+  estimates.
 
 ## Files
-- `index.html` — single-page site (hero, breeding rights & offspring, about, trust, calves, contact, footer).
+- `index.html` — single-page site: hero, wash menu, detailing packages,
+  unlimited membership, add-ons, why-us, how-it-works, reviews, fleet/gift
+  promos, locations, booking form, FAQ, final CTA, footer.
 - `styles.css` — all styling. Fonts: Oswald + Inter (Google Fonts).
-- `assets/white-buffalo-hero.svg` — the hero illustration: a **white buffalo** on the prairie at dawn. Self-contained inline SVG, no external image dependencies.
+- `assets/hero-car-wash.svg` — self-contained hero illustration (a
+  hand-washed, glossy car with water beading). No external image dependencies.
+
+## Revenue / conversion features
+- Sticky header **Book Now** CTA + click-to-call phone number.
+- Sticky mobile call/book bar.
+- Tiered wash pricing with a highlighted "Most Popular" package.
+- Detailing tiers with a premium ceramic-coating upsell.
+- **Unlimited Wash membership** for recurring monthly revenue.
+- À-la-carte add-ons, fleet accounts, and gift cards.
+- Lead-capture booking form + newsletter signup (Netlify Forms).
+- `LocalBusiness`/`AutoWash` JSON-LD structured data for local SEO.
+
+## Forms (Netlify)
+Two forms are wired for **Netlify Forms** (`data-netlify="true"` with a
+honeypot): `booking` and `newsletter`. Submissions post via AJAX so the page
+doesn't navigate away, and appear in the Netlify dashboard under *Forms*.
+Set up notifications there to route leads to email/Slack.
+
+## Deploy
+`netlify.toml` at the repo root publishes this `website/` directory. Push to
+the connected branch and Netlify builds automatically.
 
 ## Run locally
-Open `index.html` in a browser, or serve the folder:
-
 ```bash
 cd website
 python3 -m http.server 8000
 # visit http://localhost:8000
 ```
-
-## Notes
-- The hero image is the white buffalo, per the ranch's specialty.
-- The contact and newsletter forms are front-end only; wire them to a backend
-  or a form service (e.g. Netlify Forms) before going live.
