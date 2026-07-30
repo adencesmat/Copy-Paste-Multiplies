@@ -17,12 +17,10 @@ from __future__ import annotations
 import logging
 from typing import Iterable
 
-from bs4 import BeautifulSoup
-
 from ..config import Config
 from ..http import HttpClient
 from ..models import Lead
-from ..util import clean, days_until, parse_date, parse_money
+from ..util import clean, days_until, make_soup, parse_date, parse_money
 
 log = logging.getLogger(__name__)
 
@@ -55,7 +53,7 @@ def _map_header(header: str) -> str | None:
 
 def parse_results_html(html: str, base_url: str, details_path: str) -> list[Lead]:
     """Parse a Public Trustee results table into Lead objects."""
-    soup = BeautifulSoup(html, "lxml")
+    soup = make_soup(html)
     table = _find_results_table(soup)
     if table is None:
         log.warning("No results table found in foreclosure response")

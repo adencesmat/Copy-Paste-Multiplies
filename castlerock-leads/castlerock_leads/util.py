@@ -6,7 +6,21 @@ import re
 from datetime import date, datetime
 from typing import Optional
 
+from bs4 import BeautifulSoup
 from dateutil import parser as dateparser
+
+
+def make_soup(html: str) -> BeautifulSoup:
+    """Parse HTML, preferring lxml but falling back to the stdlib parser.
+
+    lxml is faster and more lenient, but it needs a compiled wheel that isn't
+    always available on a fresh machine. Falling back to Python's built-in
+    ``html.parser`` means the pipeline runs even if lxml failed to install.
+    """
+    try:
+        return BeautifulSoup(html, "lxml")
+    except Exception:  # noqa: BLE001 - missing/broken lxml, use stdlib parser
+        return BeautifulSoup(html, "html.parser")
 
 _AGE_PATTERNS = [
     re.compile(r"\bage[d]?\s+(\d{1,3})\b", re.I),

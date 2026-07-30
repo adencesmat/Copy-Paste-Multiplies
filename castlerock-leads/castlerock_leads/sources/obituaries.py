@@ -18,12 +18,10 @@ from __future__ import annotations
 import logging
 from typing import Iterable
 
-from bs4 import BeautifulSoup
-
 from ..config import Config
 from ..http import HttpClient
 from ..models import Lead
-from ..util import clean, parse_age, parse_date
+from ..util import clean, make_soup, parse_age, parse_date
 
 log = logging.getLogger(__name__)
 
@@ -85,7 +83,7 @@ def parse_legacy_json(payload: dict) -> list[Lead]:
 
 def parse_dignity_html(html: str) -> list[Lead]:
     """Parse Dignity Memorial obituary cards from server-rendered HTML."""
-    soup = BeautifulSoup(html, "lxml")
+    soup = make_soup(html)
     leads: list[Lead] = []
     # Cards are anchors/containers whose class contains "obituary" and hold a
     # name element plus a life-dates element.

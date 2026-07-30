@@ -26,12 +26,10 @@ import logging
 import re
 from typing import Iterable, Optional
 
-from bs4 import BeautifulSoup
-
 from ..config import Config
 from ..http import HttpClient
 from ..models import Lead
-from ..util import clean, parse_date
+from ..util import clean, make_soup, parse_date
 
 log = logging.getLogger(__name__)
 
@@ -165,7 +163,7 @@ class ProbateSource:
         Handles two shapes: results that embed the full notice text inline, and
         results that link to a detail page we must follow.
         """
-        soup = BeautifulSoup(html, "lxml")
+        soup = make_soup(html)
         leads: list[Lead] = []
 
         # Inline notice blocks.
@@ -197,7 +195,7 @@ class ProbateSource:
         except Exception as exc:  # noqa: BLE001
             log.debug("probate detail fetch failed %s: %s", url, exc)
             return None
-        text = BeautifulSoup(resp.text, "lxml").get_text("\n", strip=True)
+        text = make_soup(resp.text).get_text("\n", strip=True)
         if not is_estate_notice(text):
             return None
         return notice_to_lead(text, "publicnoticecolorado.com", url)
