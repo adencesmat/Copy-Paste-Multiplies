@@ -1,0 +1,103 @@
+# ---------------------------------------------------------------------------
+# Castle Rock lead pipeline configuration
+# Copy to config.yaml and adjust. config.yaml is git-ignored.
+# ---------------------------------------------------------------------------
+
+# Geography: which addresses count as "Castle Rock". A lead is kept if its
+# address contains the city string OR any of these ZIP codes.
+geography:
+  city: "CASTLE ROCK"
+  zip_codes: ["80104", "80108", "80109"]
+
+# --- Foreclosures (Douglas County Public Trustee) -------------------------
+foreclosures:
+  enabled: true
+  # Douglas County Public Trustee foreclosure search (legacy Struts app).
+  base_url: "https://apps.douglas.co.us/apps/publictrustee"
+  # The results page is reached after accepting the disclaimer. Run
+  #   python -m castlerock_leads check-endpoints
+  # from your own network to confirm these before the first real run.
+  search_path: "/propertySearch.do"
+  details_path: "/propertyDetails.do"
+  # Only keep foreclosures whose sale date is within this many days ahead
+  # (0 = no upper bound). Helps focus on actionable, not-yet-sold properties.
+  max_days_to_sale: 120
+
+# --- Probate estate notices (PRIMARY estate-sale source) -------------------
+# Colorado law (C.R.S. 15-12-801) requires every probated estate to publish a
+# "Notice to Creditors". These name the decedent AND the personal representative
+# (the decision-maker to contact), and mark an estate actively being settled --
+# a much stronger sell signal than a raw obituary. Aggregated by the Colorado
+# Press Association at publicnoticecolorado.com.
+probate:
+  enabled: true
+  search_url: "https://www.publicnoticecolorado.com/Search.aspx"
+  county: "Douglas"
+  # The CPA search is an ASP.NET form; confirm the real field names with
+  # check-endpoints, then set them here.
+  search_params:
+    keyword: "estate of"
+    county: "Douglas"
+
+# --- Obituaries (SECONDARY signal) -----------------------------------------
+# Broader but noisier than probate notices, and with no contact. Kept as a
+# backstop / early signal. Set enabled: false to rely on probate alone.
+obituaries:
+  enabled: true
+  # Only surface decedents at or above this age (older owners are more likely
+  # to have owned a paid-off home now entering an estate/probate sale).
+  min_age: 65
+  # If an obituary has no age, keep it (True) or drop it (False).
+  keep_when_age_unknown: true
+  sources:
+    legacy: true       # legacy.com Castle Rock feed
+    dignity: true       # dignitymemorial.com Castle Rock feed
+  lookback_days: 3      # how far back to pull each run (dedup handles overlap)
+
+# --- Assessor-data enrichment ---------------------------------------------
+# Attaches a real property (owner, situs + mailing address, actual value) to
+# each lead by matching against the Douglas County Assessor's public data files.
+# The county's GIS map has only parcel geometry + a schedule number, so owner
+# and value come from these bulk files instead:
+#   https://www.douglas.co.us/assessor/data-downloads/
+# Download these three (active accounts only) and drop them in assessor_data_dir:
+#   - Property Ownership   (Account_No, Owner_Name, Mailing_Address_*)
+#   - Property Location    (Account_No, situs/street address)
+#   - Actual and Assessed Property Values (Account_No, Actual_Value, ...)
+# The reader auto-detects the delimiter and maps columns by name, so no format
+# tweaking is needed. Refresh the files periodically to keep values current.
+enrichment:
+  enabled: true
+  assessor_data_dir: "assessor_data"
+  # Optional: direct download URLs. If set and the file is missing, the pipeline
+  # fetches it on first run (grab these from the data-downloads page's links).
+  # Leave blank to just place the downloaded files in assessor_data_dir yourself.
+  downloads:
+    ownership: ""
+    location: ""
+    values: ""
+  # Link back to the assessor record for each matched account (for the report).
+  assessor_search_url: "https://apps.douglas.co.us/assessor/web/"
+
+# --- Output ----------------------------------------------------------------
+output:
+  dir: "output"          # CSV + HTML reports written here, dated
+  keep_html: true
+  keep_csv: true
+
+# --- Email digest (optional) ----------------------------------------------
+# Leave enabled: false to just write files. Credentials come from environment
+# variables, never this file: SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD.
+email:
+  enabled: false
+  from_addr: "leads@example.com"
+  to_addrs: ["aden@answeringagent.com"]
+  subject_prefix: "[Castle Rock Leads]"
+
+# --- HTTP behaviour --------------------------------------------------------
+http:
+  # Be a polite citizen of public servers: identify yourself and rate-limit.
+  user_agent: "CastleRockLeadsBot/1.0 (+contact: aden@answeringagent.com)"
+  min_delay_seconds: 2.0
+  timeout_seconds: 30
+  max_retries: 3

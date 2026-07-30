@@ -1,0 +1,11 @@
+requests>=2.31
+beautifulsoup4>=4.12
+PyYAML>=6.0
+python-dateutil>=2.9
+tenacity>=8.2
+
+# Optional: faster/more-lenient HTML parsing. The pipeline falls back to
+# Python's built-in html.parser if this is absent, so installation never fails
+# on machines without a prebuilt lxml wheel. Install it for best results:
+#   pip install "lxml>=5.0"
+lxml>=5.0; platform_python_implementation == "CPython"

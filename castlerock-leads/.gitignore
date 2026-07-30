@@ -1,0 +1,16 @@
+# Local config with any tweaks / secrets references
+config.yaml
+
+# Generated data
+output/
+*.db
+
+# County assessor data files (download locally; not committed)
+assessor_data/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/

@@ -1,0 +1,50 @@
+name: Castle Rock daily leads
+
+# NOTE: GitHub-hosted runners use datacenter IPs, which the Douglas County
+# sites and Legacy.com may block (they blocked this project's build sandbox).
+# If runs come back empty, either (a) run on a self-hosted runner on a
+# residential/commercial IP, or (b) use the cron script on your own server.
+# This workflow is provided as a ready-to-use scheduler; verify reachability
+# with `check-endpoints` on the runner first.
+
+on:
+  schedule:
+    - cron: "0 13 * * *"   # 13:00 UTC ≈ 07:00 America/Denver (MDT)
+  workflow_dispatch: {}
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r castlerock-leads/requirements.txt
+
+      - name: Restore lead history (dedupe across runs)
+        uses: actions/cache@v4
+        with:
+          path: castlerock-leads/leads.db
+          key: castlerock-leads-db
+
+      - name: Run pipeline
+        working-directory: castlerock-leads
+        env:
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+        run: |
+          cp -n config.example.yaml config.yaml || true
+          python -m castlerock_leads --config config.yaml run
+
+      - name: Upload daily report
+        uses: actions/upload-artifact@v4
+        with:
+          name: castlerock-leads-${{ github.run_id }}
+          path: castlerock-leads/output/
+          if-no-files-found: warn
