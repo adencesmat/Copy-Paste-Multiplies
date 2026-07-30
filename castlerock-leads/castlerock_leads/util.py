@@ -100,6 +100,25 @@ def normalize_address(address: str | None) -> str:
     return " ".join(tokens)
 
 
+_DIRECTIONALS = {"N", "S", "E", "W", "NE", "NW", "SE", "SW"}
+_SUFFIXES = {
+    "ST", "RD", "AVE", "DR", "LN", "CT", "BLVD", "CIR", "PL", "TER",
+    "PKWY", "TRL", "HWY", "PT", "PATH", "WAY", "LOOP", "RUN", "PASS", "PLZ",
+}
+
+
+def address_core(address: str | None) -> str:
+    """Reduce an address to just its number + street-name tokens.
+
+    Drops leading directionals and trailing street-type suffixes so that
+    "123 N Wolfensberger Rd" and "123 Wolfensberger" match. Used as a fuzzy
+    fallback when the exact normalized address does not line up.
+    """
+    tokens = normalize_address(address).split()
+    tokens = [t for t in tokens if t not in _DIRECTIONALS and t not in _SUFFIXES]
+    return " ".join(tokens)
+
+
 def normalize_name(name: str | None) -> str:
     """Normalize a person name for fuzzy matching against assessor owners.
 

@@ -297,6 +297,39 @@ def test_enricher_attaches_property_to_probate_lead(tmp_path):
     assert lead.address == "42 CASTLETON WAY"           # backfilled from parcel
 
 
+def test_headerless_county_format(tmp_path):
+    # Exact Douglas County shape: header-less, comma-delimited, fully quoted.
+    # Ownership (7 cols)
+    (tmp_path / "ownership.txt").write_text(
+        '"R0412345","SMITH JOHN R","123 WOLFENSBERGER RD","","CASTLE ROCK","CO","80109"\n'
+        '"R0887766","WHITFIELD MARGARET A","42 CASTLETON WAY","","CASTLE ROCK","CO","80104"\n'
+    )
+    # Location (22 cols): address is split into components
+    (tmp_path / "location.txt").write_text(
+        '"R0412345","Residential","2229","123","","WOLFENSBERGER","RD","","80109","CASTLE ROCK","LOT 1","1","2","3","1","NW","","N","0.19","1234","NB1",""\n'
+        '"R0887766","Residential","2230","42","","CASTLETON","WAY","","80104","CASTLE ROCK","LOT 2","1","2","3","1","NW","","N","0.20","1234","NB1",""\n'
+    )
+    # Values (9 cols): two rows for R0412345 (land + improvements) must sum
+    (tmp_path / "values.txt").write_text(
+        '"R0412345","200000.00","14000","1112","LAND","N","","I","R"\n'
+        '"R0412345","385000.00","27000","1112","IMPROVEMENTS","N","","I","R"\n'
+        '"R0887766","640000.00","45760","1112","RES","N","","I","R"\n'
+    )
+    data = AssessorData.load_dir(str(tmp_path))
+    assert data.count == 2
+
+    rec = data.by_account["R0412345"]
+    assert rec.owner_name == "SMITH JOHN R"
+    assert rec.situs_address == "123 WOLFENSBERGER RD"     # reassembled from parts
+    assert rec.actual_value == 585000.0                    # 200k + 385k summed
+
+    cfg = _config()
+    # Foreclosure-style address match, and probate-style owner-name match.
+    assert data.by_address("123 Wolfensberger Rd, Castle Rock, CO 80109").account == "R0412345"
+    rec2, n = data.by_owner_name("Margaret A Whitfield", cfg.in_area)
+    assert rec2.account == "R0887766" and n == 1
+
+
 def test_normalize_address():
     assert normalize_address("123 Wolfensberger Rd.") == normalize_address("123 WOLFENSBERGER ROAD")
     assert normalize_address("42 Castleton Way, Castle Rock, CO") == "42 CASTLETON WAY"
