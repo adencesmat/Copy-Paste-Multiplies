@@ -25,7 +25,12 @@ from castlerock_leads.util import (  # noqa: E402
     parse_age,
     parse_money,
 )
-from castlerock_leads.enrich.assessor import _owner_matches  # noqa: E402
+from castlerock_leads.enrich.assessor import (  # noqa: E402
+    AssessorData,
+    AssessorEnricher,
+    _owner_matches,
+)
+from castlerock_leads.util import normalize_address  # noqa: E402
 from castlerock_leads.sources.probate import (  # noqa: E402
     is_estate_notice,
     notice_to_lead,
@@ -228,6 +233,73 @@ def test_probate_lead_scores_contact_and_value():
     # Parcel match + named PR contact + partial equity + value.
     assert lead.score >= 60
     assert "named contact" in lead.score_reasons
+
+
+def _write_assessor_files(dir_path):
+    # Three files mirroring the Douglas County download schemas, deliberately
+    # using different delimiters to exercise the sniffer.
+    (dir_path / "ownership.csv").write_text(
+        "Account_No,Owner_Name,Mailing_Address_Line_1,Mailing_City_Name,Mailing_State,Mailing_Zip_Code\n"
+        "R001,WHITFIELD MARGARET A,815 WILCOX ST,CASTLE ROCK,CO,80104\n"
+        "R002,SMITH JOHN R,123 WOLFENSBERGER RD,CASTLE ROCK,CO,80109\n"
+        "R003,SMITH JOHN,9 FAKE ST,DENVER,CO,80202\n"
+    )
+    (dir_path / "location.txt").write_text(
+        "Account_No|Location_Address|Location_City|Location_Zip\n"
+        "R001|42 CASTLETON WAY|CASTLE ROCK|80104\n"
+        "R002|123 WOLFENSBERGER RD|CASTLE ROCK|80109\n"
+        "R003|9 FAKE ST|DENVER|80202\n"
+    )
+    (dir_path / "values.csv").write_text(
+        "Account_No,Actual_Value,Assessed_Value\n"
+        "R001,640000,45760\n"
+        "R002,585000,41827\n"
+        "R003,300000,21450\n"
+    )
+
+
+def test_assessor_data_loads_and_merges(tmp_path):
+    _write_assessor_files(tmp_path)
+    data = AssessorData.load_dir(str(tmp_path))
+    assert data.count == 3
+    rec = data.by_account["R001"]
+    assert rec.owner_name == "WHITFIELD MARGARET A"
+    assert rec.situs_address == "42 CASTLETON WAY"      # merged from location file
+    assert rec.actual_value == 640000.0                 # merged from values file
+
+
+def test_assessor_address_and_owner_lookup(tmp_path):
+    _write_assessor_files(tmp_path)
+    data = AssessorData.load_dir(str(tmp_path))
+
+    # Address match tolerates "Rd." vs "RD" and trailing city/state.
+    rec = data.by_address("123 Wolfensberger Rd, Castle Rock, CO 80109")
+    assert rec and rec.account == "R002"
+
+    cfg = _config()
+    # Owner-name match, restricted to the Castle Rock area (R003 is in Denver).
+    rec, n = data.by_owner_name("John R Smith", cfg.in_area)
+    assert rec and rec.account == "R002"
+    assert n == 1
+
+
+def test_enricher_attaches_property_to_probate_lead(tmp_path):
+    _write_assessor_files(tmp_path)
+    cfg = Config(raw={
+        "geography": {"city": "CASTLE ROCK", "zip_codes": ["80104", "80108", "80109"]},
+        "enrichment": {"enabled": True, "assessor_data_dir": str(tmp_path)},
+    })
+    enricher = AssessorEnricher(cfg)
+    lead = Lead(kind="probate", source="s", name="Margaret A Whitfield")
+    enricher.enrich(lead)
+    assert lead.matched_property is not None
+    assert lead.matched_property.actual_value == 640000.0
+    assert lead.address == "42 CASTLETON WAY"           # backfilled from parcel
+
+
+def test_normalize_address():
+    assert normalize_address("123 Wolfensberger Rd.") == normalize_address("123 WOLFENSBERGER ROAD")
+    assert normalize_address("42 Castleton Way, Castle Rock, CO") == "42 CASTLETON WAY"
 
 
 def test_fingerprint_stable_and_dedupes():

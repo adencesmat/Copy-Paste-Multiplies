@@ -54,25 +54,29 @@ obituaries:
     dignity: true       # dignitymemorial.com Castle Rock feed
   lookback_days: 3      # how far back to pull each run (dedup handles overlap)
 
-# --- GIS / Assessor enrichment --------------------------------------------
-# Cross-references each lead against Douglas County parcel + assessor data to
-# attach a real property (address, account #, actual value, owner). This is
-# the "connected to the GIS maps" piece.
+# --- Assessor-data enrichment ---------------------------------------------
+# Attaches a real property (owner, situs + mailing address, actual value) to
+# each lead by matching against the Douglas County Assessor's public data files.
+# The county's GIS map has only parcel geometry + a schedule number, so owner
+# and value come from these bulk files instead:
+#   https://www.douglas.co.us/assessor/data-downloads/
+# Download these three (active accounts only) and drop them in assessor_data_dir:
+#   - Property Ownership   (Account_No, Owner_Name, Mailing_Address_*)
+#   - Property Location    (Account_No, situs/street address)
+#   - Actual and Assessed Property Values (Account_No, Actual_Value, ...)
+# The reader auto-detects the delimiter and maps columns by name, so no format
+# tweaking is needed. Refresh the files periodically to keep values current.
 enrichment:
   enabled: true
-  parcels_mapserver: "https://apps.douglas.co.us/gisod/rest/services/Parcels/MapServer"
-  # Layer index for the PARCELS layer inside the MapServer above. Confirm with
-  # check-endpoints; it prints every layer id + name.
-  parcels_layer_id: 5
-  # Field names on the parcels layer. Confirmed per-county; defaults are the
-  # most common Douglas County schema. check-endpoints prints the real fields.
-  fields:
-    owner: "OWNER_NAME"
-    site_address: "SITE_ADDR"
-    account: "ACCOUNT"
-    city: "SITE_CITY"
-    zip: "SITE_ZIP"
-  # Assessor owner-name search (used to turn an obituary name into a parcel).
+  assessor_data_dir: "assessor_data"
+  # Optional: direct download URLs. If set and the file is missing, the pipeline
+  # fetches it on first run (grab these from the data-downloads page's links).
+  # Leave blank to just place the downloaded files in assessor_data_dir yourself.
+  downloads:
+    ownership: ""
+    location: ""
+    values: ""
+  # Link back to the assessor record for each matched account (for the report).
   assessor_search_url: "https://apps.douglas.co.us/assessor/web/"
 
 # --- Output ----------------------------------------------------------------

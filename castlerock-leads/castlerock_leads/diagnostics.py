@@ -1,14 +1,16 @@
-"""First-run diagnostics: confirm live endpoints from *your* network.
+"""First-run diagnostics: confirm live sources + assessor data from *your*
+network/machine.
 
 The county sites block datacenter IPs, so these checks must be run from the
-machine that will host the pipeline. ``check-endpoints`` prints the real
-MapServer layer ids + field names (so you can fill in ``enrichment.fields`` and
-``parcels_layer_id``) and confirms each source responds.
+machine that will host the pipeline. ``check-endpoints`` confirms each web
+source responds and reports how many Assessor records were loaded from the
+local data files.
 """
 
 from __future__ import annotations
 
 from .config import Config
+from .enrich.assessor import AssessorData
 from .http import HttpClient
 from .pipeline import build_client
 from .sources.obituaries import DIGNITY_PAGE, LEGACY_FEED
@@ -18,8 +20,8 @@ def check_endpoints(config: Config) -> int:
     client = build_client(config)
     problems = 0
 
-    print("== Douglas County parcels MapServer ==")
-    problems += _check_mapserver(config, client)
+    print("== Assessor data files (local) ==")
+    problems += _check_assessor_files(config)
 
     print("\n== Public Trustee foreclosure app ==")
     fc = config["foreclosures"]
@@ -48,31 +50,28 @@ def check_endpoints(config: Config) -> int:
     return problems
 
 
-def _check_mapserver(config: Config, client: HttpClient) -> int:
-    base = config["enrichment"]["parcels_mapserver"].rstrip("/")
-    payload = None
-    try:
-        payload = client.get_json(base + "?f=json")
-    except Exception as exc:  # noqa: BLE001
-        print(f"  ! could not reach MapServer: {exc}")
+def _check_assessor_files(config: Config) -> int:
+    enr = config.get("enrichment", {})
+    if not enr.get("enabled", True):
+        print("  enrichment disabled in config — skipping")
+        return 0
+    directory = enr.get("assessor_data_dir", "assessor_data")
+    data = AssessorData.load_dir(directory)
+    if data.count == 0:
+        print(f"  ! no assessor records loaded from '{directory}/'.")
+        print("    Download these from https://www.douglas.co.us/assessor/data-downloads/")
+        print("    and place them in that folder: Property Ownership, Property")
+        print("    Location, Actual and Assessed Property Values.")
         return 1
-    if not payload:
-        print("  ! MapServer returned no JSON")
-        return 1
-    layers = payload.get("layers", [])
-    print("  Layers (use the id for parcels_layer_id):")
-    for layer in layers:
-        print(f"    [{layer.get('id')}] {layer.get('name')}")
-
-    # Print field names for the configured parcels layer so the user can fill in
-    # enrichment.fields correctly.
-    layer_id = config["enrichment"].get("parcels_layer_id", 0)
-    try:
-        detail = client.get_json(f"{base}/{layer_id}?f=json")
-        fields = [f.get("name") for f in (detail or {}).get("fields", [])]
-        print(f"  Fields on layer {layer_id}: {', '.join(fields) or '(none)'}")
-    except Exception as exc:  # noqa: BLE001
-        print(f"  ! could not read layer {layer_id} fields: {exc}")
+    with_owner = sum(1 for r in data.by_account.values() if r.owner_name)
+    with_value = sum(1 for r in data.by_account.values() if r.actual_value)
+    with_situs = sum(1 for r in data.by_account.values() if r.situs_address)
+    print(f"  OK  {data.count:,} parcels loaded from '{directory}/'")
+    print(f"      with owner name: {with_owner:,} | with value: {with_value:,} "
+          f"| with situs address: {with_situs:,}")
+    if not with_owner:
+        print("  !   no owner names loaded — add the Property Ownership file "
+              "(needed for probate/obituary name matching)")
         return 1
     return 0
 

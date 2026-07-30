@@ -78,6 +78,28 @@ def days_until(d: Optional[date]) -> Optional[int]:
     return (d - date.today()).days
 
 
+def normalize_address(address: str | None) -> str:
+    """Normalize a street address for matching across sources.
+
+    Takes the street line (before the first comma), upper-cases it, strips
+    punctuation, collapses whitespace, and standardizes common suffixes so that
+    e.g. "123 Wolfensberger Rd." and "123 WOLFENSBERGER ROAD" compare equal.
+    """
+    if not address:
+        return ""
+    street = address.split(",")[0]
+    up = re.sub(r"[^A-Z0-9 ]", " ", street.upper())
+    tokens = up.split()
+    suffix = {
+        "STREET": "ST", "ROAD": "RD", "AVENUE": "AVE", "DRIVE": "DR",
+        "LANE": "LN", "COURT": "CT", "BOULEVARD": "BLVD", "CIRCLE": "CIR",
+        "PLACE": "PL", "TERRACE": "TER", "PARKWAY": "PKWY", "TRAIL": "TRL",
+        "HIGHWAY": "HWY", "POINT": "PT", "PATH": "PATH", "WAY": "WAY",
+    }
+    tokens = [suffix.get(t, t) for t in tokens]
+    return " ".join(tokens)
+
+
 def normalize_name(name: str | None) -> str:
     """Normalize a person name for fuzzy matching against assessor owners.
 

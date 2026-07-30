@@ -5,6 +5,9 @@ config.yaml
 output/
 *.db
 
+# County assessor data files (download locally; not committed)
+assessor_data/
+
 # Python
 __pycache__/
 *.pyc

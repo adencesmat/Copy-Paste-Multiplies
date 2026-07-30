@@ -72,25 +72,40 @@ retry the activate line.)
 
 ---
 
-## Step 4 — Confirm the live sources are reachable
+## Step 4 — Download the county Assessor data (one time)
+
+Owner names and property values come from the county's free bulk files. Open
+this in your browser: **https://www.douglas.co.us/assessor/data-downloads/**
+
+Expand and download these three (click the section, then the download link):
+- **Property Ownership**
+- **Property Location**
+- **Actual and Assessed Property Values**
+
+Make a folder named `assessor_data` inside `castlerock-leads` and move those
+three downloaded files into it. (In Terminal, from the `castlerock-leads` folder:
+`mkdir assessor_data`, then drag the files into that folder in Finder.)
+
+You only do this once; refresh the files every month or so to keep values current.
+
+## Step 5 — Confirm everything is ready
 
 ```bash
 python3 -m castlerock_leads --config config.yaml check-endpoints
 ```
 
-This is the moment of truth. It contacts each source from your network and:
-- confirms the county foreclosure app, legal-notice site, and obituary feeds
-  respond (you want to see `OK`), and
-- **prints the county GIS layer numbers and field names.** Jot these down — if
-  they differ from the defaults, put them into `config.yaml` under
-  `enrichment.parcels_layer_id` and `enrichment.fields`. (Open `config.yaml` in
-  any text editor; it's all commented.)
+This contacts each source from your network and reads your Assessor files. You
+want to see:
+- `OK  N parcels loaded ... with owner name / value / situs address` (your data
+  files loaded), and
+- `OK` for the foreclosure app, legal-notice site, and obituary feeds.
 
-If a source shows an error here, tell me exactly what it printed and I'll adjust.
+If a web source shows an error, tell me exactly what it printed and I'll adjust —
+that's expected for one or two of the scraped sites until we see their live page.
 
 ---
 
-## Step 5 — Run it for real
+## Step 6 — Run it for real
 
 ```bash
 python3 -m castlerock_leads --config config.yaml run
@@ -105,7 +120,7 @@ already seen).
 
 ---
 
-## Step 6 (optional) — Have it run automatically every morning
+## Step 7 (optional) — Have it run automatically every morning
 
 - **macOS/Linux:** `scripts/run_daily.sh` is ready for `cron`. See the comment
   at the top of that file for the one-line crontab entry.

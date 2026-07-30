@@ -17,12 +17,16 @@ Three sources, in order of signal strength:
 3. **Obituaries** *(secondary signal)* — Legacy.com + Dignity Memorial,
    filtered to older decedents. Broader but noisier, with no contact.
 
-Every lead is run against the **Douglas County parcels/assessor GIS service**
-to attach a real property (account #, site address, assessor "actual value",
-owner of record) — the "connected to the local GIS maps" piece. Then each lead
-gets an **opportunity score (0-100)** built from estimated equity, whether it
-matched a real parcel, property value, whether there's a named contact, and
-foreclosure timing.
+Every lead is run against the **Douglas County Assessor's public data files**
+to attach a real property — owner of record, situs + mailing address, and
+assessor "actual value". (The county's GIS map layers hold only parcel geometry
+and a schedule number; owner and value live in the Assessor's downloadable data
+roll, so that's what the pipeline uses — see "Assessor data" below.) Foreclosures
+match by address; probate/obituary leads match by **owner name**, which is what
+turns a decedent into the specific house they owned. Then each lead gets an
+**opportunity score (0-100)** built from estimated equity, whether it matched a
+real parcel, property value, whether there's a named contact, and foreclosure
+timing.
 
 Output each day: a dated, **ranked CSV + HTML report**, plus an optional
 **email digest**. A local SQLite history means each run only shows what's *new*.
@@ -58,10 +62,8 @@ before your first real run:
 python -m castlerock_leads --config config.yaml check-endpoints
 ```
 
-`check-endpoints` prints the live GIS **layer ids and field names** so you can
-fill in the two config values that can only be read from the live service
-(`enrichment.parcels_layer_id` and `enrichment.fields`), and confirms every
-source responds.
+`check-endpoints` confirms every web source responds from your machine and
+reports how many Assessor records loaded from your local data files.
 
 ---
 
@@ -72,6 +74,26 @@ cd castlerock-leads
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 cp config.example.yaml config.yaml   # then edit config.yaml
+```
+
+### Assessor data (one-time, then refresh periodically)
+
+Owner names and property values come from the county's free bulk data files, not
+a live API. Download these three from
+<https://www.douglas.co.us/assessor/data-downloads/> (they cover active accounts
+only) and drop them in an `assessor_data/` folder inside `castlerock-leads`:
+
+* **Property Ownership** — owner names + mailing addresses
+* **Property Location** — situs (street) addresses
+* **Actual and Assessed Property Values** — the value used for equity ranking
+
+The reader auto-detects each file's format and matches columns by name, so no
+editing is needed — just place the files. Re-download every so often (monthly is
+plenty) to keep owners and values current. Verify they loaded:
+
+```bash
+python -m castlerock_leads --config config.yaml check-endpoints
+# => "OK  N parcels loaded ... with owner name / value / situs address"
 ```
 
 Run once:
@@ -92,7 +114,7 @@ fully commented). The knobs you'll most likely touch:
 | `geography.zip_codes` | Which ZIPs count as Castle Rock (default 80104/08/09). |
 | `obituaries.min_age` | Minimum decedent age to surface (default 65). |
 | `foreclosures.max_days_to_sale` | Ignore sales further out than N days. |
-| `enrichment.parcels_layer_id` / `enrichment.fields` | GIS layer + field names — set these from `check-endpoints` output. |
+| `enrichment.assessor_data_dir` | Folder holding the downloaded county Assessor files. |
 | `email.*` | Turn on the daily email digest. |
 
 **Secrets never go in the config file.** SMTP credentials for the email digest
@@ -115,17 +137,22 @@ creds, and runs the pipeline.
 as an artifact. Only use this if a self-hosted runner (or a runner IP the county
 doesn't block) is available — see the reachability note above.
 
-## How the GIS match works
+## How the property match works
 
-- **Foreclosures** already carry a street address → matched to a parcel by
-  address prefix (tolerant of unit/formatting differences).
-- **Obituaries** carry only a name → the assessor owner index is searched by
-  last name, and candidates are confirmed with an order-independent name match
-  (`SMITH JOHN` ⇄ `John Smith`) restricted to the Castle Rock area, so a common
-  surname doesn't produce false hits.
+The Assessor files are merged by account number into one record per parcel
+(owner, situs address, mailing address, value), then indexed two ways:
 
-Field names differ between counties; the defaults target the common Douglas
-County parcels schema and are overridable in `enrichment.fields`.
+- **Foreclosures** already carry a street address → matched by **situs address**,
+  normalized so `123 Wolfensberger Rd.` and `123 WOLFENSBERGER ROAD` compare
+  equal.
+- **Probate / obituaries** carry only a name → matched by **owner name** with an
+  order-independent comparison (`SMITH JOHN` ⇄ `John Smith`), restricted to
+  parcels whose situs is in the Castle Rock area so a common surname doesn't
+  attach a random property. If more than one qualifies, the lead is flagged with
+  the count for a quick manual check.
+
+Column names are matched by fuzzy header (e.g. `Owner_Name`, `Account_No`,
+`Actual_Value`), so the loader adapts if the county tweaks its file layout.
 
 ## Testing
 
