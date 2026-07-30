@@ -23,7 +23,25 @@ foreclosures:
   # (0 = no upper bound). Helps focus on actionable, not-yet-sold properties.
   max_days_to_sale: 120
 
-# --- Obituaries ------------------------------------------------------------
+# --- Probate estate notices (PRIMARY estate-sale source) -------------------
+# Colorado law (C.R.S. 15-12-801) requires every probated estate to publish a
+# "Notice to Creditors". These name the decedent AND the personal representative
+# (the decision-maker to contact), and mark an estate actively being settled --
+# a much stronger sell signal than a raw obituary. Aggregated by the Colorado
+# Press Association at publicnoticecolorado.com.
+probate:
+  enabled: true
+  search_url: "https://www.publicnoticecolorado.com/Search.aspx"
+  county: "Douglas"
+  # The CPA search is an ASP.NET form; confirm the real field names with
+  # check-endpoints, then set them here.
+  search_params:
+    keyword: "estate of"
+    county: "Douglas"
+
+# --- Obituaries (SECONDARY signal) -----------------------------------------
+# Broader but noisier than probate notices, and with no contact. Kept as a
+# backstop / early signal. Set enabled: false to rely on probate alone.
 obituaries:
   enabled: true
   # Only surface decedents at or above this age (older owners are more likely

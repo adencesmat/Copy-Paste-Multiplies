@@ -26,6 +26,14 @@ def check_endpoints(config: Config) -> int:
     url = fc["base_url"].rstrip("/") + fc["search_path"]
     problems += _probe(client, "GET", url, "foreclosure search page")
 
+    print("\n== Probate estate notices ==")
+    pr = config.get("probate", {})
+    problems += _probe(
+        client, "GET",
+        pr.get("search_url", "https://www.publicnoticecolorado.com/Search.aspx"),
+        "publicnoticecolorado.com search",
+    )
+
     print("\n== Obituary feeds ==")
     problems += _probe(
         client, "GET", config["obituaries"].get("legacy_feed_url", LEGACY_FEED),

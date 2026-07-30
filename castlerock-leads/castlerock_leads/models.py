@@ -25,8 +25,8 @@ class Property:
 class Lead:
     """A single actionable lead surfaced by the pipeline.
 
-    ``kind`` is either ``"foreclosure"`` or ``"obituary"``. Fields that do not
-    apply to a given kind are simply left as ``None``.
+    ``kind`` is ``"foreclosure"``, ``"probate"`` or ``"obituary"``. Fields that
+    do not apply to a given kind are simply left as ``None``.
     """
 
     kind: str
@@ -42,6 +42,10 @@ class Lead:
     pt_number: Optional[str] = None
     sale_date: Optional[date] = None
     original_balance: Optional[float] = None
+    # Probate specifics
+    case_number: Optional[str] = None
+    contact_name: Optional[str] = None       # personal representative
+    contact_address: Optional[str] = None
     # Obituary specifics
     death_date: Optional[date] = None
     # Provenance
@@ -50,6 +54,10 @@ class Lead:
     first_seen: Optional[str] = None
     # Enrichment
     matched_property: Optional[Property] = None
+    # Scoring (filled by scoring.score_lead)
+    score: Optional[int] = None
+    estimated_equity: Optional[float] = None
+    score_reasons: Optional[str] = None
 
     def fingerprint(self) -> str:
         """Stable id used for de-duplication across daily runs.
@@ -60,7 +68,14 @@ class Lead:
         """
         basis = "|".join(
             str(x or "").strip().upper()
-            for x in (self.kind, self.pt_number, self.name, self.address, self.death_date)
+            for x in (
+                self.kind,
+                self.pt_number,
+                self.case_number,
+                self.name,
+                self.address,
+                self.death_date,
+            )
         )
         return hashlib.sha1(basis.encode("utf-8")).hexdigest()[:16]
 

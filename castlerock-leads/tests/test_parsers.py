@@ -26,6 +26,12 @@ from castlerock_leads.util import (  # noqa: E402
     parse_money,
 )
 from castlerock_leads.enrich.assessor import _owner_matches  # noqa: E402
+from castlerock_leads.sources.probate import (  # noqa: E402
+    is_estate_notice,
+    notice_to_lead,
+    parse_notice_text,
+)
+from castlerock_leads.scoring import score_lead, estimate_equity  # noqa: E402
 
 
 FORECLOSURE_HTML = """
@@ -147,6 +153,81 @@ def test_name_normalization_and_owner_match():
     assert normalize_name("SMITH JOHN") == normalize_name("John Smith")
     assert _owner_matches("BRANDT, EDMUND", normalize_name("Edmund Brandt"))
     assert not _owner_matches("BRANDT, EDMUND", normalize_name("Jane Doe"))
+
+
+# Realistic Colorado statutory Notice to Creditors (C.R.S. 15-12-801).
+PROBATE_NOTICE = """
+NOTICE TO CREDITORS
+Estate of Margaret Ann Whitfield, a/k/a Margaret A. Whitfield, Deceased
+Case Number 2026 PR 30145
+
+All persons having claims against the above-named estate are required to
+present them to the personal representative or to the District Court of
+Douglas County, Colorado on or before November 30, 2026, or the claims may be
+forever barred.
+
+First Publication: July 24, 2026
+
+Robert Whitfield
+Personal Representative
+815 Wilcox Street, Castle Rock, CO 80104
+"""
+
+
+def test_probate_notice_parsing():
+    assert is_estate_notice(PROBATE_NOTICE)
+    fields = parse_notice_text(PROBATE_NOTICE)
+    assert fields["name"] == "Margaret Ann Whitfield"
+    assert fields["case_number"] == "2026 PR 30145"
+    assert fields["contact_name"] == "Robert Whitfield"
+    assert "815 Wilcox Street" in fields["contact_address"]
+    assert fields["first_publication"] == date(2026, 7, 24)
+
+
+def test_probate_notice_to_lead():
+    lead = notice_to_lead(PROBATE_NOTICE, "publicnoticecolorado.com", "http://x")
+    assert lead is not None
+    assert lead.kind == "probate"
+    assert lead.name == "Margaret Ann Whitfield"
+    assert lead.contact_name == "Robert Whitfield"
+    # A non-estate notice yields nothing.
+    assert notice_to_lead("NOTICE OF PUBLIC HEARING re: zoning", "s") is None
+
+
+def test_scoring_ranks_equity_and_match():
+    from castlerock_leads.models import Property
+
+    from datetime import timedelta
+
+    # High-equity foreclosure with a matched parcel and a sale ~30 days out.
+    strong = Lead(
+        kind="foreclosure", source="s", name="SMITH JOHN",
+        original_balance=200000.0,
+        sale_date=date.today() + timedelta(days=30),
+        matched_property=Property(actual_value=600000.0, owner_name="SMITH JOHN"),
+    )
+
+    # Obituary with no matched property.
+    weak = Lead(kind="obituary", source="s", name="Jane Doe", age=80)
+
+    score_lead(strong)
+    score_lead(weak)
+    assert strong.score > weak.score
+    assert strong.score >= 70            # parcel + equity + value + timing
+    assert abs(estimate_equity(strong) - (400000 / 600000)) < 1e-6
+    assert weak.score == 0
+    assert "matched to parcel" in strong.score_reasons
+
+
+def test_probate_lead_scores_contact_and_value():
+    from castlerock_leads.models import Property
+
+    lead = notice_to_lead(PROBATE_NOTICE, "publicnoticecolorado.com")
+    lead.matched_property = Property(actual_value=550000.0, owner_name="WHITFIELD MARGARET")
+    score_lead(lead)
+    # Parcel match + named PR contact + partial equity + value.
+    assert lead.score >= 60
+    assert "named contact" in lead.score_reasons
 
 
 def test_fingerprint_stable_and_dedupes():

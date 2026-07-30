@@ -41,8 +41,9 @@ def main(argv: list[str] | None = None) -> int:
     summary = run(config, db_path=args.db)
     print(
         f"Done: {summary['new']} new lead(s) "
-        f"({summary['foreclosures']} foreclosure, {summary['obituaries']} obituary; "
-        f"{summary['enriched']} matched to a parcel)."
+        f"({summary['foreclosures']} foreclosure, {summary['probate']} probate, "
+        f"{summary['obituaries']} obituary; {summary['enriched']} matched to a parcel; "
+        f"top score {summary['top_score']})."
     )
     for f in summary["files"]:
         print(f"  wrote {f}")

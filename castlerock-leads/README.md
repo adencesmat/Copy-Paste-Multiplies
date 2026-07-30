@@ -1,31 +1,46 @@
 # Castle Rock lead pipeline
 
-A daily automated pipeline that surfaces two kinds of real-estate leads in
-**Castle Rock, Colorado (Douglas County)** and cross-references each against the
-county's GIS/parcel data:
+A daily automated pipeline that surfaces motivated-seller leads in **Castle
+Rock, Colorado (Douglas County)**, cross-references each against the county's
+GIS/parcel data, and **ranks them by opportunity** so the best deals surface
+first.
 
-1. **Foreclosures** — from the Douglas County **Public Trustee** foreclosure
-   search (the authoritative source for Notices of Election & Demand and
-   foreclosure sales).
-2. **Obituaries** — recent Castle Rock obituaries (Legacy.com + Dignity
-   Memorial), filtered to older decedents, as a signal for estate/probate
-   sales.
+Three sources, in order of signal strength:
 
-Every lead is then run against the **Douglas County parcels/assessor GIS
-service** to attach a real property: account number, site address, assessor
-"actual value", and owner of record. That match is what turns a name in an
-obituary into an actionable property — and it's the "connected to the local GIS
-maps" piece you asked for.
+1. **Foreclosures** — the Douglas County **Public Trustee** foreclosure search
+   (authoritative for Notices of Election & Demand and foreclosure sales).
+2. **Probate estate notices** *(primary estate-sale source)* — Colorado law
+   (C.R.S. 15-12-801) requires every probated estate to publish a **Notice to
+   Creditors**, aggregated at publicnoticecolorado.com. These mark an estate
+   *actively being settled* and **name the personal representative** — the
+   actual decision-maker to contact. Far stronger than a raw obituary.
+3. **Obituaries** *(secondary signal)* — Legacy.com + Dignity Memorial,
+   filtered to older decedents. Broader but noisier, with no contact.
 
-Output each day: a dated **CSV** and a **HTML report**, plus an optional
-**email digest**. A local SQLite history means each run only shows you what's
-*new*.
+Every lead is run against the **Douglas County parcels/assessor GIS service**
+to attach a real property (account #, site address, assessor "actual value",
+owner of record) — the "connected to the local GIS maps" piece. Then each lead
+gets an **opportunity score (0-100)** built from estimated equity, whether it
+matched a real parcel, property value, whether there's a named contact, and
+foreclosure timing.
+
+Output each day: a dated, **ranked CSV + HTML report**, plus an optional
+**email digest**. A local SQLite history means each run only shows what's *new*.
 
 ```
-foreclosure source ─┐
-                    ├─► dedupe (SQLite) ─► GIS/assessor enrichment ─► CSV + HTML (+ email)
-obituary sources  ──┘
+foreclosure ─┐
+probate      ├─► dedupe (SQLite) ─► GIS/assessor enrich ─► score & rank ─► CSV + HTML (+ email)
+obituary   ──┘
 ```
+
+### Why this design converts
+
+Anyone can pull a raw foreclosure or obituary list. What actually drives deals
+is (a) a **higher-signal estate source** — a probate notice means the estate is
+being administered *and* hands you the personal representative to call, which a
+death notice never does; and (b) **ranking**, so you work the three
+high-equity, parcel-matched leads today instead of reading a 40-row dump. Both
+are built in.
 
 ---
 
@@ -133,12 +148,14 @@ castlerock_leads/
   http.py             # polite client: UA, rate-limit, retries
   db.py               # SQLite dedupe history
   models.py           # Lead / Property
+  scoring.py          # opportunity score (equity, match, contact, timing)
   util.py             # age/date/money/name parsing
   diagnostics.py      # check-endpoints
-  report.py           # CSV + HTML
+  report.py           # ranked CSV + HTML
   notify.py           # optional email digest
   sources/
     foreclosures.py   # Douglas County Public Trustee
+    probate.py        # probate Notice-to-Creditors (publicnoticecolorado.com)
     obituaries.py     # Legacy.com + Dignity Memorial
   enrich/
     assessor.py       # ArcGIS parcel / assessor cross-reference
@@ -156,10 +173,12 @@ published obituaries, county assessor data). Before using leads for outreach:
   restricts bulk/automated collection — review their terms and prefer their
   official feeds.
 - Obituary-derived outreach touches recently bereaved families. Contact
-  respectfully, disclose who you are, and stop on request. Many investors work
-  probate leads only after they appear in the public probate court record,
-  which is a cleaner and less intrusive signal — consider adding the Douglas
-  County probate docket as a source.
+  respectfully, disclose who you are, and stop on request. The **probate notice
+  source is the cleaner, higher-signal path** and is the pipeline's primary
+  estate source: a published Notice to Creditors is a legally public record of
+  an estate being administered, and it names the personal representative — the
+  appropriate person to contact — rather than reaching out cold off a death
+  notice. Prefer working those leads.
 
 You are responsible for compliance with TCPA, state solicitation rules, and any
 data-use restrictions that apply to your outreach.

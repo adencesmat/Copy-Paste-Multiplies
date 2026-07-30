@@ -12,8 +12,10 @@ from .enrich.assessor import AssessorEnricher
 from .http import HttpClient
 from .notify import maybe_email
 from .report import write_csv, write_html
+from .scoring import score_all
 from .sources.foreclosures import ForeclosureSource
 from .sources.obituaries import ObituarySource
+from .sources.probate import ProbateSource
 
 log = logging.getLogger(__name__)
 
@@ -34,6 +36,7 @@ def run(config: Config, db_path: str = "leads.db") -> dict:
 
     leads = []
     leads += ForeclosureSource(config, client).fetch()
+    leads += ProbateSource(config, client).fetch()
     leads += ObituarySource(config, client).fetch()
     log.info("Fetched %d candidate lead(s) before dedupe", len(leads))
 
@@ -43,6 +46,10 @@ def run(config: Config, db_path: str = "leads.db") -> dict:
 
         if config.get("enrichment", {}).get("enabled", True):
             AssessorEnricher(config, client).enrich_all(fresh)
+
+        # Score after enrichment (equity/value depend on the matched parcel) and
+        # order best-first so the report leads with the strongest opportunities.
+        fresh = score_all(fresh)
 
         history.record(fresh)
 
@@ -61,8 +68,10 @@ def run(config: Config, db_path: str = "leads.db") -> dict:
         "candidates": len(leads),
         "new": len(fresh),
         "foreclosures": sum(1 for x in fresh if x.kind == "foreclosure"),
+        "probate": sum(1 for x in fresh if x.kind == "probate"),
         "obituaries": sum(1 for x in fresh if x.kind == "obituary"),
         "enriched": sum(1 for x in fresh if x.matched_property is not None),
+        "top_score": max((x.score or 0 for x in fresh), default=0),
         "files": written,
         "emailed": emailed,
     }

@@ -1,4 +1,4 @@
-"""Render the daily lead set to CSV and a self-contained HTML report."""
+"""Render the daily lead set to CSV and a self-contained, ranked HTML report."""
 
 from __future__ import annotations
 
@@ -11,6 +11,7 @@ from typing import Sequence
 from .models import Lead
 
 CSV_COLUMNS = [
+    "score",
     "kind",
     "source",
     "name",
@@ -18,9 +19,14 @@ CSV_COLUMNS = [
     "address",
     "city",
     "zip_code",
+    "estimated_equity",
+    "score_reasons",
     "pt_number",
     "sale_date",
     "original_balance",
+    "case_number",
+    "contact_name",
+    "contact_address",
     "death_date",
     "parcel_account",
     "parcel_owner_name",
@@ -30,6 +36,12 @@ CSV_COLUMNS = [
     "first_seen",
     "fingerprint",
 ]
+
+KIND_LABEL = {
+    "foreclosure": "Foreclosure",
+    "probate": "Probate/estate",
+    "obituary": "Obituary",
+}
 
 
 def write_csv(leads: Sequence[Lead], path: Path) -> Path:
@@ -49,61 +61,81 @@ def _fmt_money(v) -> str:
         return ""
 
 
+def _fmt_pct(v) -> str:
+    try:
+        return f"{float(v) * 100:.0f}%" if v is not None else ""
+    except (TypeError, ValueError):
+        return ""
+
+
+def _score_badge(score) -> str:
+    s = score or 0
+    color = "#1a7f37" if s >= 70 else "#9a6700" if s >= 45 else "#57606a"
+    return (
+        f'<span style="display:inline-block;min-width:2.2em;text-align:center;'
+        f'padding:2px 6px;border-radius:10px;color:#fff;background:{color};'
+        f'font-weight:600">{s}</span>'
+    )
+
+
 def render_html(leads: Sequence[Lead], run_date: date | None = None) -> str:
     run_date = run_date or date.today()
-    foreclosures = [x for x in leads if x.kind == "foreclosure"]
-    obituaries = [x for x in leads if x.kind == "obituary"]
+    ranked = sorted(leads, key=lambda x: (x.score or 0), reverse=True)
+    counts = {k: sum(1 for x in leads if x.kind == k) for k in KIND_LABEL}
 
-    def rows(items: Sequence[Lead]) -> str:
-        out = []
-        for x in items:
-            prop = x.matched_property
-            out.append(
-                "<tr>"
-                f"<td>{_esc(x.name)}</td>"
-                f"<td>{_esc(x.age)}</td>"
-                f"<td>{_esc(x.address or (prop.site_address if prop else ''))}</td>"
-                f"<td>{_esc(x.sale_date or x.death_date or '')}</td>"
-                f"<td>{_esc(prop.owner_name if prop else '')}</td>"
-                f"<td>{_fmt_money(prop.actual_value if prop else None)}</td>"
-                f"<td>{_link(x.detail_url)}</td>"
-                "</tr>"
-            )
-        return "\n".join(out) or '<tr><td colspan="7"><em>None today.</em></td></tr>'
+    def row(x: Lead) -> str:
+        prop = x.matched_property
+        contact = x.contact_name or ""
+        if x.contact_address:
+            contact = f"{contact}<br><small>{_esc(x.contact_address)}</small>"
+        detail = x.sale_date or x.death_date or ""
+        return (
+            "<tr>"
+            f"<td>{_score_badge(x.score)}</td>"
+            f"<td>{_esc(KIND_LABEL.get(x.kind, x.kind))}</td>"
+            f"<td>{_esc(x.name)}{f' ({x.age})' if x.age else ''}</td>"
+            f"<td>{_esc(x.address or (prop.site_address if prop else ''))}</td>"
+            f"<td>{_fmt_money(prop.actual_value if prop else None)}</td>"
+            f"<td>{_fmt_pct(x.estimated_equity)}</td>"
+            f"<td>{contact or _esc(prop.owner_name if prop else '')}</td>"
+            f"<td>{_esc(detail)}</td>"
+            f"<td>{_link(x.detail_url)}</td>"
+            "</tr>"
+            f'<tr class="why"><td></td><td colspan="8"><small>{_esc(x.score_reasons)}</small></td></tr>'
+        )
+
+    body = "\n".join(row(x) for x in ranked) or (
+        '<tr><td colspan="9"><em>No new leads today.</em></td></tr>'
+    )
 
     return f"""<!doctype html>
 <html><head><meta charset="utf-8">
 <title>Castle Rock Leads — {run_date}</title>
 <style>
  body {{ font-family: -apple-system, Segoe UI, Roboto, sans-serif; margin: 2rem; color:#1a1a1a; }}
- h1 {{ font-size: 1.4rem; }} h2 {{ margin-top: 2rem; font-size: 1.1rem; }}
+ h1 {{ font-size: 1.4rem; margin-bottom:0.2rem; }}
  table {{ border-collapse: collapse; width: 100%; font-size: 0.9rem; }}
- th, td {{ border: 1px solid #ddd; padding: 6px 8px; text-align: left; vertical-align: top; }}
- th {{ background:#f4f4f4; }} tr:nth-child(even) {{ background:#fafafa; }}
+ th, td {{ border-bottom: 1px solid #e4e4e4; padding: 7px 9px; text-align: left; vertical-align: top; }}
+ th {{ background:#f4f4f4; border-bottom:2px solid #ddd; }}
+ tr.why td {{ border-bottom:1px solid #e4e4e4; color:#777; padding-top:0; }}
  .meta {{ color:#666; font-size:0.85rem; }}
+ a {{ color:#0969da; }}
 </style></head><body>
 <h1>Castle Rock daily leads — {run_date}</h1>
-<p class="meta">{len(foreclosures)} new foreclosure(s) · {len(obituaries)} new obituary lead(s).
-Public records only. Cross-referenced against Douglas County parcel data.</p>
+<p class="meta">Ranked by opportunity score.
+{counts['foreclosure']} foreclosure · {counts['probate']} probate/estate · {counts['obituary']} obituary.
+Public records only, cross-referenced against Douglas County parcel data.</p>
 
-<h2>Foreclosures (Douglas County Public Trustee)</h2>
 <table><thead><tr>
-<th>Grantor/Owner</th><th>Age</th><th>Address</th><th>Sale date</th>
-<th>Assessor owner</th><th>Actual value</th><th>Source</th>
+<th>Score</th><th>Type</th><th>Name</th><th>Property</th><th>Assessor value</th>
+<th>Est. equity</th><th>Contact / owner</th><th>Date</th><th>Source</th>
 </tr></thead><tbody>
-{rows(foreclosures)}
+{body}
 </tbody></table>
 
-<h2>Obituaries (possible estate sales)</h2>
-<table><thead><tr>
-<th>Name</th><th>Age</th><th>Matched property</th><th>Death date</th>
-<th>Assessor owner</th><th>Actual value</th><th>Source</th>
-</tr></thead><tbody>
-{rows(obituaries)}
-</tbody></table>
-
-<p class="meta">Generated by castlerock-leads. Contact leads respectfully and in
-compliance with Do-Not-Call and applicable regulations.</p>
+<p class="meta">Score weights parcel match, estimated equity, value, a named
+contact and foreclosure timing. Generated by castlerock-leads. Contact leads
+respectfully and in compliance with Do-Not-Call and applicable regulations.</p>
 </body></html>"""
 
 
