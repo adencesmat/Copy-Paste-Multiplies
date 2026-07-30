@@ -1,0 +1,80 @@
+"""Small parsing helpers shared across sources."""
+
+from __future__ import annotations
+
+import re
+from datetime import date, datetime
+from typing import Optional
+
+from dateutil import parser as dateparser
+
+_AGE_PATTERNS = [
+    re.compile(r"\bage[d]?\s+(\d{1,3})\b", re.I),
+    re.compile(r"\b(\d{1,3})\s+years?\s+(?:of\s+age|old)\b", re.I),
+    re.compile(r",\s*(\d{1,3})\s*,"),  # "John Smith, 87, of Castle Rock"
+]
+
+
+def parse_age(text: str | None) -> Optional[int]:
+    if not text:
+        return None
+    for pat in _AGE_PATTERNS:
+        m = pat.search(text)
+        if m:
+            age = int(m.group(1))
+            if 0 < age < 120:
+                return age
+    return None
+
+
+def parse_date(text: str | None) -> Optional[date]:
+    if not text:
+        return None
+    text = text.strip()
+    if not text:
+        return None
+    try:
+        return dateparser.parse(text, fuzzy=True).date()
+    except (ValueError, OverflowError):
+        return None
+
+
+def parse_money(text: str | None) -> Optional[float]:
+    if not text:
+        return None
+    m = re.search(r"[-+]?\$?\s*([\d,]+(?:\.\d+)?)", text)
+    if not m:
+        return None
+    try:
+        return float(m.group(1).replace(",", ""))
+    except ValueError:
+        return None
+
+
+def clean(text: str | None) -> Optional[str]:
+    if text is None:
+        return None
+    collapsed = re.sub(r"\s+", " ", text).strip()
+    return collapsed or None
+
+
+def days_until(d: Optional[date]) -> Optional[int]:
+    if d is None:
+        return None
+    return (d - date.today()).days
+
+
+def normalize_name(name: str | None) -> str:
+    """Normalize a person name for fuzzy matching against assessor owners.
+
+    Assessor owner records are usually ``LAST FIRST`` and upper-cased; obituary
+    names are ``First Last``. This reduces both to a sorted token set so the two
+    orderings compare equal.
+    """
+    if not name:
+        return ""
+    tokens = re.findall(r"[A-Za-z]+", name.upper())
+    # Drop common suffixes/titles that only appear on one side.
+    drop = {"JR", "SR", "II", "III", "IV", "MR", "MRS", "MS", "DR", "THE", "ESTATE", "OF"}
+    tokens = [t for t in tokens if t not in drop and len(t) > 1]
+    return " ".join(sorted(tokens))

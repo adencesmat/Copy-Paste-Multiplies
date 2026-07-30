@@ -1,0 +1,13 @@
+# Local config with any tweaks / secrets references
+config.yaml
+
+# Generated data
+output/
+*.db
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
